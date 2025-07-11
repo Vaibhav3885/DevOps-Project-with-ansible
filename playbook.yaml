@@ -1,0 +1,51 @@
+- name: Setup Docker, Monitoring, and Deploy App
+  hosts: web
+  become: yes
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Run web app container
+      docker_container:
+        name: web-app
+        image: nginx
+        state: started
+        ports:
+          - "8080:80"
+
+    - name: Run Prometheus
+      docker_container:
+        name: prometheus
+        image: prom/prometheus
+        volumes:
+          - ./monitoring/config/prometheus.yml:/etc/prometheus/prometheus.yml
+        ports:
+          - "9090:9090"
+        state: started
+        restart_policy: always
+
+    - name: Run Node Exporter
+      docker_container:
+        name: node-exporter
+        image: prom/node-exporter
+        ports:
+          - "9100:9100"
+        state: started
+
+    - name: Run Grafana
+      docker_container:
+        name: grafana
+        image: grafana/grafana
+        ports:
+          - "3000:3000"
+        state: started
+        restart_policy: always
